@@ -1,30 +1,37 @@
 package com.lbarqueira.layoutscodelab
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil.annotation.ExperimentalCoilApi
+import coil.compose.rememberImagePainter
 import com.lbarqueira.layoutscodelab.ui.theme.LayoutsCodelabTheme
+import kotlinx.coroutines.launch
 
 
+private const val TAG = "MyActivity"
+
+@ExperimentalCoilApi
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,6 +43,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@ExperimentalCoilApi
 @Composable
 fun LayoutsCodelab() {
     Scaffold(
@@ -46,13 +54,17 @@ fun LayoutsCodelab() {
                 },
                 actions = {
                     IconButton(onClick = { /*TODO*/ }) {
-                        Icon(Icons.Filled.Favorite, contentDescription = null)
+                        Icon(Icons.Filled.Phone, contentDescription = null)
                     }
                 }
             )
         }
     ) {
-        BodyContent(modifier = Modifier.padding(it))
+        ScrollingList(
+            modifier = Modifier
+                .padding(it)
+                .padding(start = 8.dp, end = 8.dp)
+        )
     }
 }
 
@@ -64,6 +76,87 @@ fun BodyContent(modifier: Modifier = Modifier) {
     }
 }
 
+
+@Composable
+fun SimpleList(modifier: Modifier = Modifier) {
+    // We save the scrolling position with this state that can also
+    // be used to programmatically scroll the list
+    val scrollState: ScrollState = rememberScrollState()
+
+    Column(modifier = modifier.verticalScroll(scrollState)) {
+        repeat(times = 100) {
+            Text(text = "Item $it")
+        }
+    }
+}
+
+@ExperimentalCoilApi
+@Composable
+fun ScrollingList(modifier: Modifier = Modifier) {
+
+    val listSize = 100
+
+    // We save the scrolling position with this state that can also
+    // be used to programmatically scroll the list
+    val scrollState: LazyListState = rememberLazyListState()
+    Log.i(TAG, "scrollSate is ${scrollState.firstVisibleItemIndex}")
+
+    // We save the coroutine scope where our animated scroll will be executed
+    val coroutineScope = rememberCoroutineScope()
+
+    Column(modifier = modifier.padding(top=1.dp)) {
+        Row {
+            Button(
+                modifier=Modifier.weight(1f),
+                onClick = {
+                    coroutineScope.launch {
+                        // 0 is the first item index
+                        scrollState.animateScrollToItem(0)
+                    }
+                }
+            ) {
+                Text("Scroll to the top")
+
+            }
+            Spacer(modifier = Modifier.width(2.dp))
+            Button(
+                modifier=Modifier.weight(1f),
+                onClick = {
+                    coroutineScope.launch {
+                        // listSize - 1 is the last index of the list
+                        scrollState.animateScrollToItem(listSize - 1)
+                    }
+                }
+            ) {
+                Text("Scroll to the end")
+            }
+        }
+
+        LazyColumn(state = scrollState) {
+            items(
+                count = listSize,
+                itemContent = {
+                    ImageListItem(index = it)
+                }
+            )
+        }
+    }
+
+}
+
+@ExperimentalCoilApi
+@Composable
+fun ImageListItem(index: Int) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Image(
+            painter = rememberImagePainter(data = "https://developer.android.com/images/brand/Android_Robot.png"),
+            contentDescription = "Android Logo",
+            modifier = Modifier.size(size = 50.dp)
+        )
+        Spacer(Modifier.width(10.dp))
+        Text("Item #$index", style = MaterialTheme.typography.subtitle1)
+    }
+}
 
 @Composable
 // If you're creating your own composable, consider having a modifier as a parameter,
@@ -114,6 +207,7 @@ fun PhotographerCardPreview() {
 
 // note: problem while including the device Nexus_6 preview
 // it generates 2 AppBars
+@ExperimentalCoilApi
 @Preview
 @Composable
 fun LayoutsCodelabPreview() {
